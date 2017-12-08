@@ -4,36 +4,18 @@
          is_register/1,
          get_online_amount/0, get_all_amount/0,
          get_registers_info/0,
+         disconnect/1,
          sub_topics/2, unsub_topics/2,
          get_nodes/0]).
 
--export([is_online_/1,
-         get_register_queue_pid_/1
+-export([get_register_queue_pid_/1
         ]).
 
 
 -spec is_online(Id :: binary() | tuple()) -> true | false.
-is_online(ClientId) when is_binary(ClientId) ->
-    is_online(get_nodes(), {[], ClientId});
-is_online(SubscriberId) when is_tuple(SubscriberId) ->
-    is_online(get_nodes(), SubscriberId).
-
-is_online([], _SubscriberId) ->
-    false;
-is_online([Node | Nodes], SubscriberId) when Node == node() ->
-    case is_online_(SubscriberId) of
-        true -> true;
-        false -> is_online(Nodes, SubscriberId)
-    end;
-is_online([Node | Nodes], SubscriberId) ->
-    case rpc:call(Node, ?MODULE, is_online_, [SubscriberId]) of
-        true -> true;
-        false -> is_online(Nodes, SubscriberId)
-    end.
-
-is_online_(SubscriberId) ->
-    case vmq_queue_sup_sup:get_queue_pid(SubscriberId) of
-        not_found ->
+is_online(Id) ->
+    case get_register_queue_pid(Id) of
+        undefined ->
             false;
         QPid ->
             case vmq_queue:status(QPid) of
@@ -41,6 +23,35 @@ is_online_(SubscriberId) ->
                 _ -> false
             end
     end.
+
+%is_online(ClientId) when is_binary(ClientId) ->
+%    is_online(get_nodes(), {[], ClientId});
+%is_online(SubscriberId) when is_tuple(SubscriberId) ->
+%    is_online(get_nodes(), SubscriberId).
+%
+%is_online([], _SubscriberId) ->
+%    false;
+%is_online([Node | Nodes], SubscriberId) when Node == node() ->
+%    case is_online_(SubscriberId) of
+%        true -> true;
+%        false -> is_online(Nodes, SubscriberId)
+%    end;
+%is_online([Node | Nodes], SubscriberId) ->
+%    case rpc:call(Node, ?MODULE, is_online_, [SubscriberId]) of
+%        true -> true;
+%        false -> is_online(Nodes, SubscriberId)
+%    end.
+%
+%is_online_(SubscriberId) ->
+%    case vmq_queue_sup_sup:get_queue_pid(SubscriberId) of
+%        not_found ->
+%            false;
+%        QPid ->
+%            case vmq_queue:status(QPid) of
+%                {online, _Mode, _TotalStoredMsgs, _Sessions, _IsPlugin} -> true;
+%                _ -> false
+%            end
+%    end.
 
 get_register_queue_pid(ClientId) when is_binary(ClientId) ->
     get_register_queue_pid(get_nodes(), {[], ClientId});
@@ -55,7 +66,7 @@ get_register_queue_pid([Node | Nodes], SubscriberId) when Node == node() ->
         Pid -> Pid
     end;
 get_register_queue_pid([Node | Nodes], SubscriberId) ->
-    case rcp:call(Node, ?MODULE, get_register_queue_pid_, [SubscriberId]) of
+    case rpc:call(Node, ?MODULE, get_register_queue_pid_, [SubscriberId]) of
         undefined -> get_register_queue_pid(Nodes, SubscriberId);
         Pid -> Pid
     end.
@@ -119,6 +130,16 @@ get_registers_info() ->
     {All, Online} = vmq_ql_query_mgr:fold_query(Fun, {0, 0}, Q),
     #{all => All, online => Online}.
 
+disconnect(ClientId) when is_binary(ClientId) ->
+    disconnect({[], ClientId});
+disconnect(SubscriberId) when is_tuple(SubscriberId) ->
+    case get_register_queue_pid(SubscriberId) of
+        undefined ->
+            ignore;
+        QPid ->
+            SessionPids = vmq_queue:get_sessions(QPid),
+            [Pid ! disconnect || Pid <- SessionPids]
+    end.
 
 %sub_topics(<<"test1">>, [{[<<"chat">>, <<"test1">>], 1}])
 %todo: ensure cluster
