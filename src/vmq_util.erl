@@ -1,23 +1,22 @@
 -module(vmq_util).
 
--export([is_online/1, %is_online_/1,
-         is_online_ql/1,
+-export([is_online/1, is_online_ql/1,
          is_register/1,
-         get_register_queue_pid_/1,
          get_online_amount/0, get_all_amount/0,
          get_registers_info/0,
-         sub_topics/2,
-         %get_online_client_ids/0,
-         unsub_topics/2,
+         sub_topics/2, unsub_topics/2,
          get_nodes/0]).
 
+-export([is_online_/1,
+         get_register_queue_pid_/1
+        ]).
 
-get_nodes() ->
-    LocalNode = node(),
-    [LocalNode | (vmq_cluster:nodes() -- [LocalNode])].
 
-is_online(ClientId) ->
-    is_online(get_nodes(), {[], ClientId}).
+-spec is_online(Id :: binary() | tuple()) -> true | false.
+is_online(ClientId) when is_binary(ClientId) ->
+    is_online(get_nodes(), {[], ClientId});
+is_online(SubscriberId) when is_tuple(SubscriberId) ->
+    is_online(get_nodes(), SubscriberId).
 
 is_online([], _SubscriberId) ->
     false;
@@ -43,8 +42,10 @@ is_online_(SubscriberId) ->
             end
     end.
 
-get_register_queue_pid(ClientId) ->
-    get_register_queue_pid(get_nodes(), {[], ClientId}).
+get_register_queue_pid(ClientId) when is_binary(ClientId) ->
+    get_register_queue_pid(get_nodes(), {[], ClientId});
+get_register_queue_pid(SubscriberId) when is_tuple(SubscriberId) ->
+    get_register_queue_pid(get_nodes(), SubscriberId).
 
 get_register_queue_pid([], _SubscriberId) ->
     undefined;
@@ -65,14 +66,15 @@ get_register_queue_pid_(SubscriberId) ->
         QPid -> QPid
     end.
 
-is_register(ClientId) ->
-    case get_register_queue_pid(ClientId) of
+-spec is_register(Id :: binary() | tuple()) -> true | false.
+is_register(Id) ->
+    case get_register_queue_pid(Id) of
         undefined -> false;
         _ -> true
     end.
 
 
-
+-spec is_online_ql(binary()) -> true | false.
 is_online_ql(ClientId) ->
     Q = <<"SELECT client_id FROM sessions WHERE is_online=true AND client_id=\"", ClientId/binary, "\"">>,
     Fun = fun(Row, Acc) ->
@@ -86,6 +88,8 @@ is_online_ql(ClientId) ->
         [ClientId] -> true
     end.
 
+
+-spec get_online_amount() -> integer().
 get_online_amount() ->
     Q = "SELECT client_id FROM sessions WHERE is_online=true",
     Fun = fun(_Row, Acc) ->
@@ -93,6 +97,8 @@ get_online_amount() ->
           end,
     vmq_ql_query_mgr:fold_query(Fun, 0, Q).
 
+
+-spec get_all_amount() -> integer().
 get_all_amount() ->
     Q = "SELECT client_id FROM sessions",
     Fun = fun(_Row, Acc) ->
@@ -100,6 +106,9 @@ get_all_amount() ->
           end,
     vmq_ql_query_mgr:fold_query(Fun, 0, Q).
 
+
+-type register_info() :: #{all => integer(), online => integer()}.
+-spec get_registers_info() -> register_info().
 get_registers_info() ->
     Q = "SELECT client_id, is_online FROM sessions",
     Fun = fun(#{is_online := false}, {AllAcc, OnlineAcc}) ->
@@ -112,6 +121,7 @@ get_registers_info() ->
 
 
 %sub_topics(<<"test1">>, [{[<<"chat">>, <<"test1">>], 1}])
+%todo: ensure cluster
 sub_topics(ClientId, Topics) ->
     case binary:match(ClientId, [<<"+">>, <<"#">>]) of
         nomatch ->
@@ -122,5 +132,10 @@ sub_topics(ClientId, Topics) ->
     end.
 
 %Topics = [[<<"chat">>, <<"test">>]]
+%todo: ensure cluster
 unsub_topics(ClientId, Topics) ->
     vmq_reg:unsubscribe(false, ClientId, {[], ClientId}, Topics).
+
+get_nodes() ->
+    LocalNode = node(),
+    [LocalNode | (vmq_cluster:nodes() -- [LocalNode])].
