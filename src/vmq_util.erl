@@ -184,7 +184,7 @@ handle_sub_topics(SubscriberId, Topics) ->
 
 
 do_sub_topics({_, ClientId} = SubscriberId, Topics) ->
-    {Node, _, _} = vmq_subscriber_db:read(SubscriberId),
+    [{Node, _, _}] = vmq_subscriber_db:read(SubscriberId),
     case Node == node() of
         true ->
             vmq_reg:subscribe(false, ClientId, SubscriberId, Topics),
@@ -195,7 +195,7 @@ do_sub_topics({_, ClientId} = SubscriberId, Topics) ->
 
 
 do_unsub_topics({_, ClientId} = SubscriberId, Topics) ->
-    {Node, _, _} = vmq_subscriber_db:read(SubscriberId),
+    [{Node, _, _}] = vmq_subscriber_db:read(SubscriberId),
     case Node == node() of
         true ->
             vmq_reg:unsubscribe(false, ClientId, SubscriberId, Topics),
