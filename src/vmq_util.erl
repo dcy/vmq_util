@@ -7,6 +7,7 @@
          disconnect/1,
          sub_topic/2, sub_topics/2,
          unsub_topic/2, unsub_topics/2,
+         get_subed_topics/1,
          get_nodes/0]).
 
 -export([get_register_queue_pid_/1,
@@ -54,8 +55,15 @@ get_register_queue_pid_(SubscriberId) ->
 
 
 -spec is_register(Id :: binary() | tuple()) -> true | false.
-is_register(Id) ->
-    case get_register_queue_pid(Id) of
+%is_register(Id) ->
+%    case get_register_queue_pid(Id) of
+%        undefined -> false;
+%        _ -> true
+%    end.
+is_register(ClientId) when is_binary(ClientId) ->
+    is_register({[], ClientId});
+is_register(SubscriberId) when is_tuple(SubscriberId) ->
+    case vmq_subscriber_db:read(SubscriberId) of
         undefined -> false;
         _ -> true
     end.
@@ -235,6 +243,15 @@ handle_unsub_topics(SubscriberId, Topics) ->
                         ok -> ok
                     end
             end
+    end.
+
+-spec get_subed_topics(Id :: binary() | tuple()) -> list({topic(), integer()}).
+get_subed_topics(ClientId) when is_binary(ClientId) ->
+    get_subed_topics({[], ClientId});
+get_subed_topics(SubscriberId) when is_tuple(SubscriberId) ->
+    case vmq_subscriber_db:read(SubscriberId) of
+        undefined -> [];
+        [{_, _, Topics}] -> Topics
     end.
 
 
