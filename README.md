@@ -18,9 +18,9 @@ vmq_util
 ``` 
 -spec is_register(Id :: binary() | tuple()) -> true | false.
 
-(xlg_vmq@192.168.3.236)38> vmq_util:is_register(<<"test1">>).
+(dcy_vmq@192.168.3.236)38> vmq_util:is_register(<<"test1">>).
 true
-(xlg_vmq@192.168.3.236)39> vmq_util:is_register({[], <<"test100">>}).
+(dcy_vmq@192.168.3.236)39> vmq_util:is_register({[], <<"test100">>}).
 false
 ```
 
@@ -28,9 +28,9 @@ false
 ```
 -spec is_online(Id :: binary() | tuple()) -> true | false.
 
-(xlg_vmq@192.168.3.236)50> vmq_util:is_online(<<"test1">>).
+(dcy_vmq@192.168.3.236)50> vmq_util:is_online(<<"test1">>).
 false
-(xlg_vmq@192.168.3.236)51> vmq_util:is_online({[], <<"test6">>}).
+(dcy_vmq@192.168.3.236)51> vmq_util:is_online({[], <<"test6">>}).
 true
 ```
 
@@ -38,9 +38,9 @@ true
 ```
 -spec disconnect(Id :: binary() | tuple()) -> ok | ignore.
 
-(xlg_vmq@192.168.3.236)56> vmq_util:disconnect({[], <<"test6">>}).
+(dcy_vmq@192.168.3.236)56> vmq_util:disconnect({[], <<"test6">>}).
 ok
-(xlg_vmq@192.168.3.236)57> vmq_util:disconnect(<<"test1">>).      
+(dcy_vmq@192.168.3.236)57> vmq_util:disconnect(<<"test1">>).      
 ok
 ```
 
@@ -48,7 +48,7 @@ ok
 ```
 -spec get_online_amount() -> integer().
 
-(xlg_vmq@192.168.3.236)58> vmq_util:get_online_amount().
+(dcy_vmq@192.168.3.236)58> vmq_util:get_online_amount().
 1
 ```
 
@@ -56,7 +56,7 @@ ok
 ```
 -spec get_all_amount() -> integer().
 
-(xlg_vmq@192.168.3.236)59> vmq_util:get_all_amount().   
+(dcy_vmq@192.168.3.236)59> vmq_util:get_all_amount().   
 3
 ```
 
@@ -65,7 +65,7 @@ ok
 -type register_info() :: #{all => integer(), online => integer()}.
 -spec get_registers_info() -> register_info().
 
-(xlg_vmq@192.168.3.236)60> vmq_util:get_registers_info().
+(dcy_vmq@192.168.3.236)60> vmq_util:get_registers_info().
 #{all => 3,online => 1}
 ```
 
@@ -76,11 +76,11 @@ ok
 -spec sub_topic(Id :: binary() | tuple(), Topic :: topic()) -> ok | {error, any()}.
 %%sub_topic(<<"test1">>, {<<"inbox/test1">>, 1}).
 
-(xlg_vmq@192.168.3.236)61> vmq_util:sub_topic(<<"test6">>, {<<"inbox/test6">>, 1}).
+(dcy_vmq@192.168.3.236)61> vmq_util:sub_topic(<<"test6">>, {<<"inbox/test6">>, 1}).
 ok
-(xlg_vmq@192.168.3.236)62> vmq_util:sub_topic({[], <<"test8">>}, {<<"inbox/test8">>, 1}).
+(dcy_vmq@192.168.3.236)62> vmq_util:sub_topic({[], <<"test8">>}, {<<"inbox/test8">>, 1}).
 no_the_subscriber_id
-(xlg_vmq@192.168.3.236)63> vmq_util:sub_topic({[], <<"test6">>}, {<<"inbox/test8">>, 1}).
+(dcy_vmq@192.168.3.236)63> vmq_util:sub_topic({[], <<"test6">>}, {<<"inbox/test8">>, 1}).
 ok
 ```
 
@@ -89,9 +89,9 @@ ok
 -spec sub_topics(Id :: binary() | tuple(), Topics :: topics()) -> ok | {error, any()}.
 %%sub_topics(<<"test1">>, [{<<"inbox/test1">>, 1}]).
 
-(xlg_vmq@192.168.3.236)65> vmq_util:sub_topics(<<"test6">>, [{<<"inbox/test1">>, 1}, {<<"inbox/test2">>, 1}]).
+(dcy_vmq@192.168.3.236)65> vmq_util:sub_topics(<<"test6">>, [{<<"inbox/test1">>, 1}, {<<"inbox/test2">>, 1}]).
 ok
-(xlg_vmq@192.168.3.236)66> vmq_util:sub_topics({[], <<"test6">>}, [{<<"inbox/test1">>, 1}, {<<"inbox/test2">>, 1}]).
+(dcy_vmq@192.168.3.236)66> vmq_util:sub_topics({[], <<"test6">>}, [{<<"inbox/test1">>, 1}, {<<"inbox/test2">>, 1}]).
 ok
 ```
 
@@ -100,9 +100,9 @@ ok
 -spec unsub_topic(Id :: binary() | tuple(), Topic :: binary()) -> ok | {error, any()}.
 %%unsub_topic(<<"test1">>, <<"inbox/test">>).
 
-(xlg_vmq@192.168.3.236)68> vmq_util:unsub_topic(<<"test6">>, <<"inbox/test1">>).
+(dcy_vmq@192.168.3.236)68> vmq_util:unsub_topic(<<"test6">>, <<"inbox/test1">>).
 ok
-(xlg_vmq@192.168.3.236)69> vmq_util:unsub_topic({[], <<"test6">>}, <<"inbox/test1">>).
+(dcy_vmq@192.168.3.236)69> vmq_util:unsub_topic({[], <<"test6">>}, <<"inbox/test1">>).
 ok
 ```
 
@@ -110,9 +110,9 @@ ok
 ```
 -spec unsub_topics(Id :: binary() | tuple(), Topics :: topics()) -> ok | {error, any()}.
 
-(xlg_vmq@192.168.3.236)70> vmq_util:unsub_topics({[], <<"test6">>}, [<<"inbox/test1">>, <<"inbox/test2">>]).
+(dcy_vmq@192.168.3.236)70> vmq_util:unsub_topics({[], <<"test6">>}, [<<"inbox/test1">>, <<"inbox/test2">>]).
 ok
-(xlg_vmq@192.168.3.236)71> vmq_util:unsub_topics(<<"test6">>, [<<"inbox/test1">>, <<"inbox/test2">>]).      
+(dcy_vmq@192.168.3.236)71> vmq_util:unsub_topics(<<"test6">>, [<<"inbox/test1">>, <<"inbox/test2">>]).      
 ok
 ```
 
@@ -120,10 +120,10 @@ ok
 ```
 -spec get_subed_topics(Id :: binary() | tuple()) -> list({topic(), integer()}).
 
-(xlg_vmq@192.168.3.236)72> vmq_util:get_subed_topics(<<"test6">>).
+(dcy_vmq@192.168.3.236)72> vmq_util:get_subed_topics(<<"test6">>).
 [{[<<"inbox">>,<<"test6">>],1},
  {[<<"inbox">>,<<"test8">>],1}]
-(xlg_vmq@192.168.3.236)73> vmq_util:get_subed_topics({[], <<"test6">>}).
+(dcy_vmq@192.168.3.236)73> vmq_util:get_subed_topics({[], <<"test6">>}).
 [{[<<"inbox">>,<<"test6">>],1},
  {[<<"inbox">>,<<"test8">>],1}]
 ```
