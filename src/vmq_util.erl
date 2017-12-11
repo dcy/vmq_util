@@ -27,34 +27,6 @@ is_online(Id) ->
             end
     end.
 
-%is_online(ClientId) when is_binary(ClientId) ->
-%    is_online(get_nodes(), {[], ClientId});
-%is_online(SubscriberId) when is_tuple(SubscriberId) ->
-%    is_online(get_nodes(), SubscriberId).
-%
-%is_online([], _SubscriberId) ->
-%    false;
-%is_online([Node | Nodes], SubscriberId) when Node == node() ->
-%    case is_online_(SubscriberId) of
-%        true -> true;
-%        false -> is_online(Nodes, SubscriberId)
-%    end;
-%is_online([Node | Nodes], SubscriberId) ->
-%    case rpc:call(Node, ?MODULE, is_online_, [SubscriberId]) of
-%        true -> true;
-%        false -> is_online(Nodes, SubscriberId)
-%    end.
-%
-%is_online_(SubscriberId) ->
-%    case vmq_queue_sup_sup:get_queue_pid(SubscriberId) of
-%        not_found ->
-%            false;
-%        QPid ->
-%            case vmq_queue:status(QPid) of
-%                {online, _Mode, _TotalStoredMsgs, _Sessions, _IsPlugin} -> true;
-%                _ -> false
-%            end
-%    end.
 
 get_register_queue_pid(ClientId) when is_binary(ClientId) ->
     get_register_queue_pid(get_nodes(), {[], ClientId});
@@ -79,6 +51,7 @@ get_register_queue_pid_(SubscriberId) ->
         not_found -> undefined;
         QPid -> QPid
     end.
+
 
 -spec is_register(Id :: binary() | tuple()) -> true | false.
 is_register(Id) ->
@@ -133,6 +106,7 @@ get_registers_info() ->
     {All, Online} = vmq_ql_query_mgr:fold_query(Fun, {0, 0}, Q),
     #{all => All, online => Online}.
 
+
 disconnect(ClientId) when is_binary(ClientId) ->
     disconnect({[], ClientId});
 disconnect(SubscriberId) when is_tuple(SubscriberId) ->
@@ -144,16 +118,6 @@ disconnect(SubscriberId) when is_tuple(SubscriberId) ->
             [Pid ! disconnect || Pid <- SessionPids]
     end.
 
-%sub_topics(<<"test1">>, [{[<<"chat">>, <<"test1">>], 1}])
-%todo: ensure cluster
-%sub_topics(ClientId, Topics) ->
-%    case binary:match(ClientId, [<<"+">>, <<"#">>]) of
-%        nomatch ->
-%            SubscriberId = {[], ClientId},
-%            vmq_reg:subscribe(false, ClientId, SubscriberId, Topics);
-%        _ ->
-%            {error, contain_wildcards, ClientId}
-%    end.
 
 -type topic() :: {binary(), integer()}.
 -type topics() :: list(topic()).
@@ -161,6 +125,7 @@ disconnect(SubscriberId) when is_tuple(SubscriberId) ->
 %%sub_topic(<<"test1">>, {<<"inbox/test1">>, 1}).
 sub_topic(Id, Topic) when is_tuple(Topic) ->
     sub_topics(Id, [Topic]).
+
 
 -spec sub_topics(Id :: binary() | tuple(), Topics :: topics()) -> ok | {error, any()}.
 %%sub_topics(<<"test1">>, [{<<"inbox/test1">>, 1}]).
@@ -171,6 +136,7 @@ sub_topics(SubscriberId, Topics) when is_tuple(SubscriberId) andalso is_list(Top
         {error, Reason} -> {error, Reason};
         {ok, ValidatedTopics} -> handle_sub_topics(SubscriberId, ValidatedTopics)
     end.
+
 
 validate_sub_topics(Topics) ->
     validate_sub_topics(Topics, []).
@@ -185,6 +151,7 @@ validate_sub_topics([{Topic, QoS} | Topics], AccTopics) when is_binary(Topic) ->
             {error, Reason}
     end.
 
+
 %validate_pub_topics(Topics) ->
 %    validate_pub_topics(Topics, []).
 %
@@ -197,6 +164,7 @@ validate_sub_topics([{Topic, QoS} | Topics], AccTopics) when is_binary(Topic) ->
 %        {error, Reason} ->
 %            {error, Reason}
 %    end.
+
 
 handle_sub_topics(SubscriberId, Topics) ->
     case vmq_subscriber_db:read(SubscriberId) of
@@ -214,6 +182,7 @@ handle_sub_topics(SubscriberId, Topics) ->
             end
     end.
 
+
 do_sub_topics({_, ClientId} = SubscriberId, Topics) ->
     {Node, _, _} = vmq_subscriber_db:read(SubscriberId),
     case Node == node() of
@@ -223,6 +192,7 @@ do_sub_topics({_, ClientId} = SubscriberId, Topics) ->
         false ->
             subscriber_node_changed
     end.
+
 
 do_unsub_topics({_, ClientId} = SubscriberId, Topics) ->
     {Node, _, _} = vmq_subscriber_db:read(SubscriberId),
@@ -240,6 +210,7 @@ do_unsub_topics({_, ClientId} = SubscriberId, Topics) ->
 unsub_topic(Id, Topic) when is_binary(Topic) ->
     unsub_topics(Id, [Topic]).
 
+
 -spec unsub_topics(Id :: binary() | tuple(), Topics :: topics()) -> ok | {error, any()}.
 unsub_topics(ClientId, Topics) when is_binary(ClientId) ->
     unsub_topics({[], ClientId}, Topics);
@@ -248,6 +219,7 @@ unsub_topics(SubscriberId, Topics) when is_tuple(SubscriberId) andalso is_list(T
         {error, Reason} -> {error, Reason};
         {ok, ValidatedTopics} -> handle_unsub_topics(SubscriberId, ValidatedTopics)
     end.
+
 
 handle_unsub_topics(SubscriberId, Topics) ->
     case vmq_subscriber_db:read(SubscriberId) of
@@ -264,8 +236,6 @@ handle_unsub_topics(SubscriberId, Topics) ->
                     end
             end
     end.
-
-
 
 
 get_nodes() ->
