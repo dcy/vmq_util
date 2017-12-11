@@ -3,14 +3,15 @@
 -export([is_online/1, is_online_ql/1,
          is_register/1,
          get_online_amount/0, get_all_amount/0,
-         get_registers_info/0, get_register_queue_pid/1,
+         get_registers_info/0, 
          disconnect/1,
          sub_topic/2, sub_topics/2,
-         unsub_topics/2,
+         unsub_topic/2, unsub_topics/2,
          get_nodes/0]).
 
 -export([get_register_queue_pid_/1,
-         do_sub_topics/2
+         get_register_queue_pid/1,
+         do_sub_topics/2, do_unsub_topics/2
         ]).
 
 
@@ -165,24 +166,37 @@ sub_topic(Id, Topic) when is_tuple(Topic) ->
 %%sub_topics(<<"test1">>, [{<<"inbox/test1">>, 1}]).
 sub_topics(ClientId, Topics) when is_binary(ClientId) ->
     sub_topics({[], ClientId}, Topics);
-sub_topics(SubscriberId, Topics) when is_list(Topics) ->
-    case validate_topics(subscribe, Topics) of
+sub_topics(SubscriberId, Topics) when is_tuple(SubscriberId) andalso is_list(Topics) ->
+    case validate_sub_topics(Topics) of
         {error, Reason} -> {error, Reason};
         {ok, ValidatedTopics} -> handle_sub_topics(SubscriberId, ValidatedTopics)
     end.
 
-validate_topics(Type, Topics) ->
-    validate_topics(Type, Topics, []).
+validate_sub_topics(Topics) ->
+    validate_sub_topics(Topics, []).
 
-validate_topics(_Type, [], AccTopics) ->
-    AccTopics;
-validate_topics(Type, [{Topic, QoS} | Topics], AccTopics) when is_binary(Topic) ->
-    case vmq_topic:validate_topic(Type, Topic) of
+validate_sub_topics([], AccTopics) ->
+    {ok, AccTopics};
+validate_sub_topics([{Topic, QoS} | Topics], AccTopics) when is_binary(Topic) ->
+    case vmq_topic:validate_topic(subscribe, Topic) of
         {ok, ValidatedTopic} ->
-            validate_topics(Type, Topics, [{ValidatedTopic, QoS} | AccTopics]);
+            validate_sub_topics(Topics, [{ValidatedTopic, QoS} | AccTopics]);
         {error, Reason} ->
             {error, Reason}
     end.
+
+%validate_pub_topics(Topics) ->
+%    validate_pub_topics(Topics, []).
+%
+%validate_pub_topics([], AccTopics) ->
+%    {ok, AccTopics};
+%validate_pub_topics([Topic | Topics], AccTopics) when is_binary(Topic) ->
+%    case vmq_topic:validate_topic(publish, Topic) of
+%        {ok, ValidatedTopic} ->
+%            validate_pub_topics(Topics, [ValidatedTopic | AccTopics]);
+%        {error, Reason} ->
+%            {error, Reason}
+%    end.
 
 handle_sub_topics(SubscriberId, Topics) ->
     case vmq_subscribe_db:read(SubscriberId) of
@@ -210,12 +224,49 @@ do_sub_topics({_, ClientId} = SubscriberId, Topics) ->
             subscriber_node_changed
     end.
 
+do_unsub_topics({_, ClientId} = SubscriberId, Topics) ->
+    {Node, _, _} = vmq_subscribe_db:read(SubscriberId),
+    case Node == node() of
+        true ->
+            vmq_reg:unsubscribe(false, ClientId, SubscriberId, Topics),
+            ok;
+        false ->
+            subscriber_node_changed
+    end.
 
 
-%Topics = [[<<"chat">>, <<"test">>]]
-%todo: ensure cluster
-unsub_topics(ClientId, Topics) ->
-    vmq_reg:unsubscribe(false, ClientId, {[], ClientId}, Topics).
+-spec unsub_topic(Id :: binary() | tuple(), Topic :: binary()) -> ok | {error, any()}.
+%%unsub_topic(<<"test1">>, <<"inbox/test">>).
+unsub_topic(Id, Topic) when is_binary(Topic) ->
+    unsub_topics(Id, [Topic]).
+
+-spec unsub_topics(Id :: binary() | tuple(), Topics :: topics()) -> ok | {error, any()}.
+unsub_topics(ClientId, Topics) when is_binary(ClientId) ->
+    unsub_topics({[], ClientId}, Topics);
+unsub_topics(SubscriberId, Topics) when is_tuple(SubscriberId) andalso is_list(Topics) ->
+    case validate_sub_topics(Topics) of
+        {error, Reason} -> {error, Reason};
+        {ok, ValidatedTopics} -> handle_unsub_topics(SubscriberId, ValidatedTopics)
+    end.
+
+handle_unsub_topics(SubscriberId, Topics) ->
+    case vmq_subscribe_db:read(SubscriberId) of
+        undefined ->
+            no_the_subscriber_id;
+        [{Node, _, _}] ->
+            case Node == node() of
+                true ->
+                    do_unsub_topics(SubscriberId, Topics);
+                false ->
+                    case rpc:call(Node, do_unsub_topics, [SubscriberId, Topics]) of
+                        subscriber_node_changed -> handle_unsub_topics(SubscriberId, Topics);
+                        ok -> ok
+                    end
+            end
+    end.
+
+
+
 
 get_nodes() ->
     LocalNode = node(),
