@@ -7,8 +7,7 @@
          disconnect/1,
          sub_topic/2, sub_topics/2,
          unsub_topic/2, unsub_topics/2,
-         get_subed_topics/1,
-         get_nodes/0]).
+         get_subed_topics/1]).
 
 -export([get_register_queue_pid_/1,
          get_register_queue_pid/1,
@@ -115,6 +114,7 @@ get_registers_info() ->
     #{all => All, online => Online}.
 
 
+-spec disconnect(Id :: binary() | tuple()) -> ok | ignore.
 disconnect(ClientId) when is_binary(ClientId) ->
     disconnect({[], ClientId});
 disconnect(SubscriberId) when is_tuple(SubscriberId) ->
@@ -123,7 +123,8 @@ disconnect(SubscriberId) when is_tuple(SubscriberId) ->
             ignore;
         QPid ->
             SessionPids = vmq_queue:get_sessions(QPid),
-            [Pid ! disconnect || Pid <- SessionPids]
+            [Pid ! disconnect || Pid <- SessionPids],
+            ok
     end.
 
 
