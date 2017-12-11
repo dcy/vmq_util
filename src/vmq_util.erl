@@ -152,18 +152,18 @@ validate_sub_topics([{Topic, QoS} | Topics], AccTopics) when is_binary(Topic) ->
     end.
 
 
-%validate_pub_topics(Topics) ->
-%    validate_pub_topics(Topics, []).
-%
-%validate_pub_topics([], AccTopics) ->
-%    {ok, AccTopics};
-%validate_pub_topics([Topic | Topics], AccTopics) when is_binary(Topic) ->
-%    case vmq_topic:validate_topic(publish, Topic) of
-%        {ok, ValidatedTopic} ->
-%            validate_pub_topics(Topics, [ValidatedTopic | AccTopics]);
-%        {error, Reason} ->
-%            {error, Reason}
-%    end.
+validate_unsub_topics(Topics) ->
+    validate_unsub_topics(Topics, []).
+
+validate_unsub_topics([], AccTopics) ->
+    {ok, AccTopics};
+validate_unsub_topics([Topic | Topics], AccTopics) when is_binary(Topic) ->
+    case vmq_topic:validate_topic(publish, Topic) of
+        {ok, ValidatedTopic} ->
+            validate_unsub_topics(Topics, [ValidatedTopic | AccTopics]);
+        {error, Reason} ->
+            {error, Reason}
+    end.
 
 
 handle_sub_topics(SubscriberId, Topics) ->
@@ -215,7 +215,7 @@ unsub_topic(Id, Topic) when is_binary(Topic) ->
 unsub_topics(ClientId, Topics) when is_binary(ClientId) ->
     unsub_topics({[], ClientId}, Topics);
 unsub_topics(SubscriberId, Topics) when is_tuple(SubscriberId) andalso is_list(Topics) ->
-    case validate_sub_topics(Topics) of
+    case validate_unsub_topics(Topics) of
         {error, Reason} -> {error, Reason};
         {ok, ValidatedTopics} -> handle_unsub_topics(SubscriberId, ValidatedTopics)
     end.
