@@ -199,7 +199,7 @@ validate_sub_topics([{Topic, QoS} | Topics], AccTopics) when is_binary(Topic) ->
 %    end.
 
 handle_sub_topics(SubscriberId, Topics) ->
-    case vmq_subscribe_db:read(SubscriberId) of
+    case vmq_subscriber_db:read(SubscriberId) of
         undefined ->
             no_the_subscriber_id;
         [{Node, _, _}] ->
@@ -215,7 +215,7 @@ handle_sub_topics(SubscriberId, Topics) ->
     end.
 
 do_sub_topics({_, ClientId} = SubscriberId, Topics) ->
-    {Node, _, _} = vmq_subscribe_db:read(SubscriberId),
+    {Node, _, _} = vmq_subscriber_db:read(SubscriberId),
     case Node == node() of
         true ->
             vmq_reg:subscribe(false, ClientId, SubscriberId, Topics),
@@ -225,7 +225,7 @@ do_sub_topics({_, ClientId} = SubscriberId, Topics) ->
     end.
 
 do_unsub_topics({_, ClientId} = SubscriberId, Topics) ->
-    {Node, _, _} = vmq_subscribe_db:read(SubscriberId),
+    {Node, _, _} = vmq_subscriber_db:read(SubscriberId),
     case Node == node() of
         true ->
             vmq_reg:unsubscribe(false, ClientId, SubscriberId, Topics),
@@ -250,7 +250,7 @@ unsub_topics(SubscriberId, Topics) when is_tuple(SubscriberId) andalso is_list(T
     end.
 
 handle_unsub_topics(SubscriberId, Topics) ->
-    case vmq_subscribe_db:read(SubscriberId) of
+    case vmq_subscriber_db:read(SubscriberId) of
         undefined ->
             no_the_subscriber_id;
         [{Node, _, _}] ->
