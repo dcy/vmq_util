@@ -5,10 +5,12 @@
          get_online_amount/0, get_all_amount/0,
          get_registers_info/0, get_register_queue_pid/1,
          disconnect/1,
-         sub_topics/2, unsub_topics/2,
+         sub_topic/2, sub_topics/2,
+         unsub_topics/2,
          get_nodes/0]).
 
--export([get_register_queue_pid_/1
+-export([get_register_queue_pid_/1,
+         do_sub_topics/2
         ]).
 
 
@@ -143,14 +145,72 @@ disconnect(SubscriberId) when is_tuple(SubscriberId) ->
 
 %sub_topics(<<"test1">>, [{[<<"chat">>, <<"test1">>], 1}])
 %todo: ensure cluster
-sub_topics(ClientId, Topics) ->
-    case binary:match(ClientId, [<<"+">>, <<"#">>]) of
-        nomatch ->
-            SubscriberId = {[], ClientId},
-            vmq_reg:subscribe(false, ClientId, SubscriberId, Topics);
-        _ ->
-            {error, contain_wildcards, ClientId}
+%sub_topics(ClientId, Topics) ->
+%    case binary:match(ClientId, [<<"+">>, <<"#">>]) of
+%        nomatch ->
+%            SubscriberId = {[], ClientId},
+%            vmq_reg:subscribe(false, ClientId, SubscriberId, Topics);
+%        _ ->
+%            {error, contain_wildcards, ClientId}
+%    end.
+
+-type topic() :: {binary(), integer()}.
+-type topics() :: list(topic()).
+-spec sub_topic(Id :: binary() | tuple(), Topic :: topic()) -> ok | {error, any()}.
+%%sub_topic(<<"test1">>, {<<"inbox/test1">>, 1}).
+sub_topic(Id, Topic) when is_tuple(Topic) ->
+    sub_topics(Id, [Topic]).
+
+-spec sub_topics(Id :: binary() | tuple(), Topics :: topics()) -> ok | {error, any()}.
+%%sub_topics(<<"test1">>, [{<<"inbox/test1">>, 1}]).
+sub_topics(ClientId, Topics) when is_binary(ClientId) ->
+    sub_topics({[], ClientId}, Topics);
+sub_topics(SubscriberId, Topics) when is_list(Topics) ->
+    case validate_topics(subscribe, Topics) of
+        {error, Reason} -> {error, Reason};
+        {ok, ValidatedTopics} -> handle_sub_topics(SubscriberId, ValidatedTopics)
     end.
+
+validate_topics(Type, Topics) ->
+    validate_topics(Type, Topics, []).
+
+validate_topics(_Type, [], AccTopics) ->
+    AccTopics;
+validate_topics(Type, [{Topic, QoS} | Topics], AccTopics) when is_binary(Topic) ->
+    case vmq_topic:validate_topic(Type, Topic) of
+        {ok, ValidatedTopic} ->
+            validate_topics(Type, Topics, [{ValidatedTopic, QoS} | AccTopics]);
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+handle_sub_topics(SubscriberId, Topics) ->
+    case vmq_subscribe_db:read(SubscriberId) of
+        undefined ->
+            no_the_subscriber_id;
+        [{Node, _, _}] ->
+            case Node == node() of
+                true ->
+                    do_sub_topics(SubscriberId, Topics);
+                false ->
+                    case rpc:call(Node, do_sub_topics, [SubscriberId, Topics]) of
+                        subscriber_node_changed -> handle_sub_topics(SubscriberId, Topics);
+                        ok -> ok
+                    end
+            end
+    end.
+
+do_sub_topics({_, ClientId} = SubscriberId, Topics) ->
+    {Node, _, _} = vmq_subscribe_db:read(SubscriberId),
+    case Node == node() of
+        true ->
+            vmq_reg:subscribe(false, ClientId, SubscriberId, Topics),
+            ok;
+        false ->
+            subscriber_node_changed
+    end.
+
+
 
 %Topics = [[<<"chat">>, <<"test">>]]
 %todo: ensure cluster
