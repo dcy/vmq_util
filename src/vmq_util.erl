@@ -3,7 +3,7 @@
 -export([is_online/1, is_online_ql/1,
          is_register/1,
          get_online_amount/0, get_all_amount/0,
-         get_registers_info/0,
+         get_registers_info/0, get_register_queue_pid/1,
          disconnect/1,
          sub_topics/2, unsub_topics/2,
          get_nodes/0]).
