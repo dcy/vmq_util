@@ -175,7 +175,7 @@ handle_sub_topics(SubscriberId, Topics) ->
                 true ->
                     do_sub_topics(SubscriberId, Topics);
                 false ->
-                    case rpc:call(Node, do_sub_topics, [SubscriberId, Topics]) of
+                    case rpc:call(Node, ?MODULE, do_sub_topics, [SubscriberId, Topics]) of
                         subscriber_node_changed -> handle_sub_topics(SubscriberId, Topics);
                         ok -> ok
                     end
@@ -230,7 +230,7 @@ handle_unsub_topics(SubscriberId, Topics) ->
                 true ->
                     do_unsub_topics(SubscriberId, Topics);
                 false ->
-                    case rpc:call(Node, do_unsub_topics, [SubscriberId, Topics]) of
+                    case rpc:call(Node, ?MODULE, do_unsub_topics, [SubscriberId, Topics]) of
                         subscriber_node_changed -> handle_unsub_topics(SubscriberId, Topics);
                         ok -> ok
                     end
