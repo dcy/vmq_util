@@ -1,7 +1,16 @@
 vmq_util
 =====
 
-## Doc
+## Install
+In your VerneMQ plugin's `rebar.config`:
+
+```erlang
+{deps, [
+  {vmq_util, {git, "https://github.com/dcy/vmq_util", {branch, "master"}}}
+]}.
+```
+
+## API
 - [is_register/1](#is_register)
 - [is_online/1](#is_online)
 - [disconnect/1](#disconnect)
